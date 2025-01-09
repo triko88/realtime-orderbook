@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <memory>
 #include <sstream>
+#include <vector>
 
 namespace beast     = boost::beast;
 namespace asio      = boost::asio;
@@ -33,21 +34,10 @@ class MarketFeed {
   std::unordered_set<std::string> symbols;
   std::unique_ptr<ssl_socket> web;
 
-  /*
-  std::string symbol_string() {
-    std::string res = std::accumulate (symbols.begin(), symbols.end(), std::string(),
-        [](const std::string& acc, std::string symbol) {
-          return acc + "\"" + symbol + "\",";
-        });
-    res.pop_back();
-    return res;
-  }
-  */
-
 public:
-  MarketFeed(std::string hostname) : hostname(hostname) {
+  MarketFeed(std::string hostname, std::vector<std::string> symbols) :
+    hostname(hostname), symbols(symbols.begin(), symbols.end()) {
     try {
-      symbols = {"BTCUSD","ETHUSD","ETHBTC"};
       asio::io_context io_context;
 
       asio::ip::tcp::resolver resolver(io_context);
@@ -96,11 +86,28 @@ public:
         // Stream data to the order book stream
         // Ex: orderstream << json_buffer;
         // And the orderstream will redirect json data to the order book
-        std::cout << json_buffer.dump() << std::endl;
+        std::string event = json_buffer["type"].template get<std::string>();
+        if (event == "l2_updates") {
+          /*
+        std::vector<std::vector<std::string>> changes =
+          json_buffer["changes"].template get<std::vector<std::vector<std::string>>>();
+          for (auto change : changes)
+            std::cout << change[0] << "\t" << change[1] << "\t" << change[2] << std::endl;
+            */
+          std::cout << json_buffer.dump() << std::endl;
+        }
         buffer.clear();
       }
     } catch (const beast::system_error& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
+  }
+
+  json getMarketData(beast::flat_buffer& buffer) {
+    web->read(buffer);
+    std::string buffstr(asio::buffer_cast<const char*>(buffer.data()), buffer.size());
+    buffer.clear();
+
+    return json::parse(buffstr);
   }
 };

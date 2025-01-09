@@ -1,0 +1,9 @@
+[submodule "imgui"]
+	path = imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "nanoui"]
+	path = nanoui
+	url = https://github.com/mitsuba-renderer/nanogui.git
+[submodule "clay"]
+	path = clay
+	url = https://github.com/nicbarker/clay.git
